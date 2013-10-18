@@ -1,6 +1,4 @@
 ![Image](./logo.png?raw=true)
-
-react
 =====
 
 Commandline tool for executing scripts on directory changes

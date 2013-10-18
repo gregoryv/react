@@ -24,11 +24,12 @@ import (
     "strings"
     "bytes"
     "path"
+    "flag"
 )
 
 type Driver struct {
     wtc       *fsnotify.Watcher
-    root      string
+    script    string
 }
 
 func NewDriver() (d *Driver) {
@@ -36,8 +37,8 @@ func NewDriver() (d *Driver) {
     return
 }
 
-func (d *Driver) Drive(root string) {
-    d.root = root
+func (d *Driver) Drive(script, root string) {
+    d.script = script
     // Directory watcher
     d.wtc = d.createWatcher()
     go d.distributeIOEvents(d.wtc.Event)
@@ -61,7 +62,7 @@ func (d *Driver) createWatcher() *fsnotify.Watcher {
 func (d *Driver) distributeIOEvents(eventstream chan *fsnotify.FileEvent) {
     for event := range eventstream {
         name := event.Name
-        script := path.Dir(name) + "/.onchange"
+        script := filepath.Join(path.Dir(name), d.script)
         log.Printf("%s %s", script, name)
         cmd := exec.Command(script, name)
         cmd.Stdin = strings.NewReader("some input")
@@ -91,7 +92,7 @@ func (d *Driver) MapFilesAndDirs(path string, info os.FileInfo, err error) error
         log.Fatal(err)
     }
     if stat.IsDir() {
-        script := path + "/.onchange"
+        script := filepath.Join(path, d.script)
         _, err := os.Stat(script)
         if err != nil {
             if os.IsNotExist(err) {
@@ -113,9 +114,18 @@ func (d *Driver) watchPath(path string, watcher *fsnotify.Watcher) {
     log.Printf("Watching %s\n", path)
 }
 
+var script = flag.String("script", ".onchange", "on change script name")
+var root = flag.String("root", ".", "Directory to start reaction in")
+var printVersion = flag.Bool("v", false, "Prints version and exits")
+
 func main() {
+    flag.Parse()
+    if *printVersion {
+        fmt.Printf("0.1\n")
+        os.Exit(0)
+    }
     driver := NewDriver()
-    driver.Drive(".")
+    driver.Drive(*script, *root)
     defer driver.Close()
     waitForCtrlC("Press Ctrl-c to stop")
 }
