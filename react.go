@@ -28,8 +28,9 @@ import (
 )
 
 type Driver struct {
-    wtc    *fsnotify.Watcher
-    script string
+    wtc          *fsnotify.Watcher
+    script       string
+    FoundScripts bool
 }
 
 func NewDriver() (d *Driver) {
@@ -82,7 +83,7 @@ func (d *Driver) mapper() filepath.WalkFunc {
     }
 }
 
-// If path is a directory and contains the change script it's watched
+// MapFilesAndDirs connects a watcher to the path if a script is present
 func (d *Driver) MapFilesAndDirs(path string, info os.FileInfo, err error) error {
     if err != nil {
         return err
@@ -111,6 +112,7 @@ func (d *Driver) watchPath(path string, watcher *fsnotify.Watcher) {
         log.Fatal(err)
     }
     log.Printf("Watching %s\n", path)
+    d.FoundScripts = true
 }
 
 var script = flag.String("script", ".onchange", "on change script name")
@@ -126,7 +128,10 @@ func main() {
     driver := NewDriver()
     driver.Drive(*script, *root)
     defer driver.Close()
-    waitForCtrlC("Press Ctrl-c to stop")
+    if driver.FoundScripts {
+        waitForCtrlC("Press Ctrl-c to stop")
+    }
+    fmt.Printf("No scripts named '%v' found in '%v' or it's sub folders!\n", *script, *root)
 }
 
 // Waits for Ctrl-c before calling os.Exit(0)
