@@ -14,22 +14,22 @@
 package main
 
 import (
-    "code.google.com/p/go.exp/fsnotify"
-    "log"
-    "os"            // For creating files and directories
-    "path/filepath" // For walking directories
-    "os/exec"
-    "fmt"
-    "os/signal"
-    "strings"
     "bytes"
-    "path"
+    "code.google.com/p/go.exp/fsnotify"
     "flag"
+    "fmt"
+    "log"
+    "os" // For creating files and directories
+    "os/exec"
+    "os/signal"
+    "path"
+    "path/filepath" // For walking directories
+    "strings"
 )
 
 type Driver struct {
-    wtc       *fsnotify.Watcher
-    script    string
+    wtc    *fsnotify.Watcher
+    script string
 }
 
 func NewDriver() (d *Driver) {
@@ -99,12 +99,11 @@ func (d *Driver) MapFilesAndDirs(path string, info os.FileInfo, err error) error
                 // skip
             }
         } else {
-           d.watchPath(path, d.wtc)
+            d.watchPath(path, d.wtc)
         }
     }
     return nil
 }
-
 
 func (d *Driver) watchPath(path string, watcher *fsnotify.Watcher) {
     err := watcher.Watch(path)
@@ -140,4 +139,3 @@ func waitForCtrlC(message string) {
         os.Exit(0)
     }
 }
-
