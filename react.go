@@ -31,7 +31,6 @@ type Driver struct {
     wtc          *fsnotify.Watcher
     script       string
     FoundScripts bool
-    Running      bool
 }
 
 func NewDriver() (d *Driver) {
@@ -64,28 +63,18 @@ func (d *Driver) createWatcher() *fsnotify.Watcher {
 func (d *Driver) distributeIOEvents(eventstream chan *fsnotify.FileEvent) {
     for event := range eventstream {
         name := event.Name
-        if d.Running {
-            log.Printf("Skipping: %s", name)
-        } else {
-            d.Running = true
-            defer d.done()
-            script := filepath.Join(path.Dir(name), d.script)
-            log.Printf("%s %s", script, name)
-            cmd := exec.Command(script, name)
-            cmd.Stdin = strings.NewReader("some input")
-            var out bytes.Buffer
-            cmd.Stdout = &out
-            err := cmd.Run()
-            if err != nil {
-                log.Printf(err.Error())
-            }
-            fmt.Printf("%s", out.String())
+        script := filepath.Join(path.Dir(name), d.script)
+        log.Printf("%s %s", script, name)
+        cmd := exec.Command(script, name)
+        cmd.Stdin = strings.NewReader("some input")
+        var out bytes.Buffer
+        cmd.Stdout = &out
+        err := cmd.Run()
+        if err != nil {
+            log.Printf(err.Error())
         }
+        fmt.Printf("%s", out.String())
     }
-}
-
-func (d *Driver) done() {
-    d.Running = false
 }
 
 func (d *Driver) mapper() filepath.WalkFunc {
