@@ -14,7 +14,6 @@
 package main
 
 import (
-    "bytes"
     "code.google.com/p/go.exp/fsnotify"
     "flag"
     "fmt"
@@ -24,7 +23,6 @@ import (
     "os/signal"
     "path"
     "path/filepath" // For walking directories
-    "strings"
 )
 
 type Driver struct {
@@ -64,16 +62,13 @@ func (d *Driver) distributeIOEvents(eventstream chan *fsnotify.FileEvent) {
     for event := range eventstream {
         name := event.Name
         script := filepath.Join(path.Dir(name), d.script)
-        log.Printf("%s %s", script, name)
-        cmd := exec.Command(script, name)
-        cmd.Stdin = strings.NewReader("some input")
-        var out bytes.Buffer
-        cmd.Stdout = &out
-        err := cmd.Run()
-        if err != nil {
-            log.Printf(err.Error())
+        if *verbose {
+            log.Printf("%s %s", script, name)
         }
-        fmt.Printf("%s", out.String())
+        cmd := exec.Command(script, name)
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+        cmd.Run()
     }
 }
 
@@ -111,13 +106,16 @@ func (d *Driver) watchPath(path string, watcher *fsnotify.Watcher) {
     if err != nil {
         log.Fatal(err)
     }
-    log.Printf("Watching %s\n", path)
+    if *verbose {
+        log.Printf("Watching %s\n", path)
+    }
     d.FoundScripts = true
 }
 
 var script = flag.String("script", ".onchange", "on change script name")
 var root = flag.String("root", ".", "Directory to start reaction in")
 var printVersion = flag.Bool("v", false, "Prints version and exits")
+var verbose = flag.Bool("verbose", false, "Prints what's going on")
 
 func main() {
     flag.Parse()
